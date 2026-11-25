@@ -1,0 +1,10 @@
+# Sistema Operacional e Logs
+.DS_Store
+Thumbs.db
+*.log
+
+# Documentos locais e pacotes compactados
+*.pdf
+*.md
+*.txt
+*.zip

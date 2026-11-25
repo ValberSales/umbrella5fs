@@ -1,0 +1,9 @@
+services:
+  umbrella-5fs-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: umbrella-ogg-5fs
+    ports:
+      - "8089:80"
+    restart: unless-stopped
