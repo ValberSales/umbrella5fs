@@ -292,17 +292,17 @@ function renderHeroPorterPentagon() {
 }
 
 /**
- * Gráfico 01: Evolução Auditada de Receita, Lucro Bruto, Lucro Líquido e Liquidez Total (P1 a P6 + Meta P7)
+ * Gráfico 01: Evolução Auditada de Receita, Lucro Bruto, Lucro Líquido e Caixa + Aplicações (P1 a P6 + Previsão P7)
  */
 function renderChart01FinancialTrajectory() {
   const host = document.getElementById("svgStageFinancialP6");
   if (!host) return;
 
-  const periods = ["P1", "P2", "P3", "P4", "P5", "P6 (Real)", "P7 (Meta)"];
+  const periods = ["P1", "P2", "P3", "P4", "P5", "P6 (Real)", "P7 (Prev.)"];
   const receita = [0.0, 0.0, 5.3, 21.82, 28.57, 36.7, 78.45];
   const lucroBruto = [0.0, 0.0, 3.49, 15.24, 20.88, 24.99, 48.35];
   const lucroLiquido = [-2.17, -2.79, 0.06, 12.46, 11.95, 10.84, 27.55];
-  const liquidez = [5.13, 1.44, 1.27, 10.5, 20.47, 29.81, 60.99]; // Caixa + Aplicações
+  const liquidez = [5.13, 1.44, 1.27, 10.5, 20.47, 29.81, 35.47]; // P7 Caixa Final Ajustado = R$ 35,47M (+ R$ 25,52M Recebíveis R4)
 
   const W = 960;
   const H = 370;
@@ -734,18 +734,18 @@ function renderChart08CompetitorVulnerability() {
 }
 
 /* =========================================================================
-   5. INTERACTIVE CYCLE 7 PORTER COUNTER-STRATEGY CONSOLE
+   5. INTERACTIVE CYCLE 7 PORTER COUNTER-STRATEGY CONSOLE (UPDATED R4 3X & APLIC R$ 0)
    ========================================================================= */
 function initP7Simulator() {
   const slSales = document.getElementById("simSales");
   const slProd = document.getElementById("simProductivity");
   const slPrice = document.getElementById("simPrice");
-  const slTreasury = document.getElementById("simTreasury");
+  const slR4Share = document.getElementById("simTreasury");
 
   const valSales = document.getElementById("valSimSales");
   const valProd = document.getElementById("valSimProductivity");
   const valPrice = document.getElementById("valSimPrice");
-  const valTreasury = document.getElementById("valSimTreasury");
+  const valR4Share = document.getElementById("valSimTreasury");
 
   const outAvailVol = document.getElementById("outAvailVol");
   const outAvailNote = document.getElementById("outAvailNote");
@@ -762,9 +762,10 @@ function initP7Simulator() {
 
   const INITIAL_PA_P7 = 738941; // Estoque final auditado P6
   const NOMINAL_CAP_P7 = 1800000; // 2 módulos USBIO
-  const MP3_QTY_P7 = 1798011; // Lote base P7
-
-  let useCarCaetano = false;
+  const INITIAL_CASH_P7 = 24814625.67; // Saldo inicial caixa P7
+  const RESGATE_P6 = 5000000.0; // Resgate aplicação feita no P6
+  const RENDIMENTO_P6 = 120000.0; // Rendimento na DRE P7 da aplicação P6
+  const MP_CASH_OUT_P7 = 9325387.67; // Saída de caixa compra MP P7
 
   function fmtInt(n) {
     return Math.round(n).toLocaleString("pt-BR");
@@ -775,12 +776,12 @@ function initP7Simulator() {
     const targetSales = Number(slSales.value);
     const prodPct = Number(slProd.value);
     const avgPrice = Number(slPrice.value);
-    const appliedMillions = Number(slTreasury.value);
+    const r4WeightPct = Number(slR4Share.value); // % da receita na R4 parcelada em P0/P+1/P+2
 
     valSales.textContent = `${fmtInt(targetSales)} un`;
     valProd.textContent = `${prodPct.toFixed(1).replace(".", ",")}%`;
     valPrice.textContent = `R$ ${avgPrice.toFixed(2).replace(".", ",")}`;
-    valTreasury.textContent = `R$ ${appliedMillions.toFixed(1).replace(".", ",")} mi`;
+    valR4Share.textContent = `${r4WeightPct.toFixed(1).replace(".", ",")}% em 3x`;
 
     const realProd = Math.round(NOMINAL_CAP_P7 * (prodPct / 100));
     const maxSupply = INITIAL_PA_P7 + realProd;
@@ -792,50 +793,50 @@ function initP7Simulator() {
       outAvailNote.textContent = `Teto físico: ${fmtInt(realProd)} prod. + 738,9k est. = ${fmtInt(maxSupply)} un`;
       outAvailNote.style.color = "#b45309";
     } else {
-      outAvailNote.textContent = `Prod. real: ${fmtInt(realProd)} un • Estoque final PA: ${fmtInt(endingPa)} un`;
+      outAvailNote.textContent = `Prod.: ${fmtInt(realProd)} un • Estoque final PA: ${fmtInt(endingPa)} un`;
       outAvailNote.style.color = "#047857";
     }
 
-    // Economia Fornecedor MP3 (CarCaetano R$ 2,20 vs API R$ 2,50 + 1% frete)
-    const mp3CostApi = MP3_QTY_P7 * 2.5 * 1.01;
-    const mp3CostCar = MP3_QTY_P7 * 2.2 * 1.01;
-    const supplierSaving = useCarCaetano ? mp3CostApi - mp3CostCar : 0;
-    const finIncome = appliedMillions * 1e6 * 0.02; // 2,0% efetivo na previsão
-
-    outMpSavings.textContent = useCarCaetano
-      ? `+R$ ${((supplierSaving + finIncome) / 1e3).toFixed(0)} mil`
-      : `+R$ ${(finIncome / 1e3).toFixed(0)} mil`;
-    outMpNote.textContent = useCarCaetano
-      ? `CarCaetano À Vista poupa R$ 545 mil no MP3 + R$ ${(finIncome / 1e3).toFixed(0)} mil juros`
-      : `API a prazo (+13,6% custo embutido) • Juros aplic.: R$ ${(finIncome / 1e3).toFixed(0)} mil`;
-    outMpNote.style.color = useCarCaetano ? "#047857" : "#64748b";
-
-    // Receita, CPV e Lucro Líquido P7
+    // Receita total e divisão À Vista (R2+R3 + 1/3 R4) vs Duplicatas P8/P9 (2/3 R4)
     const revenue = effectiveSold * avgPrice;
-    const unitIndCpv = 5.46; // Média ponderada estoque PA R$2,49 + lote P7 MP R$4,22 + Emb. R$1,30
-    const cpv = effectiveSold * unitIndCpv + revenue * 0.175; // 12,5% imp + 5% com
+    const r4Rev = revenue * (r4WeightPct / 100);
+    const receivablesP8P9 = r4Rev * (2 / 3);
+    const cashSalesInflow = revenue - receivablesP8P9;
+    const totalCashInflow = cashSalesInflow + RESGATE_P6;
+
+    outMpSavings.textContent = `R$ ${(totalCashInflow / 1e6).toFixed(2).replace(".", ",")} mi`;
+    outMpNote.textContent = `Vendas à vista: R$ ${(cashSalesInflow / 1e6).toFixed(2).replace(".", ",")}M + Resgate R$ 5M • Duplicatas P8/P9: R$ ${(receivablesP8P9 / 1e6).toFixed(2).replace(".", ",")}M`;
+    outMpNote.style.color = "#0369a1";
+
+    // DRE Prevista calibrada exatamente com a Previsão Oficial P7 (Receita 78,45M -> CPV 30,10M -> Desp 16,06M -> LL 27,55M)
+    const varTaxComm = revenue * 0.217074; // Alíquota efetiva Custo Variável Fluxo P7 (17.029.063,55 / 78.448.230)
+    const indCpv = effectiveSold * 5.148426; // Concilia CPV exato = 30.100.612,39 em 2.538.941 un @ R$ 30,898
+    const cpv = indCpv + varTaxComm;
     const grossProfit = revenue - cpv;
-    const opExpenses = 16058088; // P&D 3,6M + Prop 5,77M + Fixo 2M + RH/Pesq
-    const lair = grossProfit - opExpenses + finIncome;
-    const netProfit = lair > 0 ? lair * 0.85 : lair;
+    const opExpenses = 16058088.25;
+    const lair = grossProfit - opExpenses + RENDIMENTO_P6;
+    const ir = lair > 0 ? lair * 0.15 : 0;
+    const netProfit = lair - ir;
     const grossMarginPct = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
 
     outRevP7.textContent = `R$ ${(revenue / 1e6).toFixed(2).replace(".", ",")} mi`;
-    if (avgPrice > 31.5) {
-      outMarginNote.textContent = `Lucro Líq.: R$ ${(netProfit / 1e6).toFixed(2).replace(".", ",")} mi • Atenção: À Vista >R$31 exige prazo P0/P+1 na R4`;
-      outMarginNote.style.color = "#b45309";
+    outMarginNote.textContent = `Margem Bruta: ${grossMarginPct.toFixed(1).replace(".", ",")}% (R$ ${(grossProfit / 1e6).toFixed(2).replace(".", ",")}M) • Lucro Líquido: R$ ${(netProfit / 1e6).toFixed(2).replace(".", ",")} mi`;
+    outMarginNote.style.color = netProfit >= 20e6 ? "#047857" : "#b45309";
+
+    // Fluxo de Caixa Previsto (Saldo Inicial 24,81M + Entradas - Despesas - CustoVar - IR - CompraMP; Aplicação = R$ 0)
+    const totalOutflows = opExpenses + varTaxComm + ir + MP_CASH_OUT_P7;
+    const endingCash = INITIAL_CASH_P7 + totalCashInflow - totalOutflows;
+    const estAssetsMillions = (endingCash + receivablesP8P9) / 1e6 + 11.2 + 3.0; // Caixa + Recebíveis + Estoques + Usinas (em R$ mi)
+    const estRoa = estAssetsMillions > 0 ? ((netProfit / 1e6) / estAssetsMillions) * 100 : 0;
+
+    outCashRoa.textContent = `R$ ${(endingCash / 1e6).toFixed(2).replace(".", ",")} mi`;
+    if (endingCash >= 100000) {
+      outRoaNote.textContent = `+R$ ${(receivablesP8P9 / 1e6).toFixed(2).replace(".", ",")}M a receber • ROA ~${estRoa.toFixed(1).replace(".", ",")}% • Empréstimo Automático: R$ 0`;
+      outRoaNote.style.color = "#047857";
     } else {
-      outMarginNote.textContent = `Margem Bruta: ${grossMarginPct.toFixed(1).replace(".", ",")}% • Lucro Líquido: R$ ${(netProfit / 1e6).toFixed(2).replace(".", ",")} mi`;
-      outMarginNote.style.color = "#047857";
+      outRoaNote.textContent = `Alerta de caixa negativo: exigiria empréstimo automático (12%)`;
+      outRoaNote.style.color = "#b90422";
     }
-
-    const estTotalLiquidity = 29.81 + (netProfit / 1e6) + (useCarCaetano ? 0.54 : 0);
-    const estAssets = 42.9 + Math.max(0, netProfit / 1e6);
-    const estRoa = estAssets > 0 ? ((netProfit / 1e6) / estAssets) * 100 : 0;
-
-    outCashRoa.textContent = `R$ ${estTotalLiquidity.toFixed(2).replace(".", ",")} mi`;
-    outRoaNote.textContent = `ROA Projetado: ${estRoa.toFixed(1).replace(".", ",")}% (Meta mínima Conselho: 20,0%)`;
-    outRoaNote.style.color = estRoa >= 20 ? "#047857" : "#b90422";
   }
 
   function setActiveBtn(btn) {
@@ -845,45 +846,41 @@ function initP7Simulator() {
 
   if (btnSavedP7) {
     btnSavedP7.addEventListener("click", () => {
-      useCarCaetano = false;
       setActiveBtn(btnSavedP7);
       slSales.value = 2538941;
       slProd.value = 100.0;
-      slPrice.value = 30.9;
-      slTreasury.value = 6.0;
+      slPrice.value = 30.898;
+      slR4Share.value = 48.8; // 38,28M / 78,45M = 48,8% da receita na R4 em P0/P+1/P+2
       recalculate();
     });
   }
 
   if (btnPorterOpt) {
     btnPorterOpt.addEventListener("click", () => {
-      useCarCaetano = true;
       setActiveBtn(btnPorterOpt);
-      slSales.value = 2150000;
+      slSales.value = 2376941;
       slProd.value = 91.0;
-      slPrice.value = 30.2;
-      slTreasury.value = 16.0;
+      slPrice.value = 30.898;
+      slR4Share.value = 48.8;
       recalculate();
     });
   }
 
   if (btnStressP7) {
     btnStressP7.addEventListener("click", () => {
-      useCarCaetano = true;
       setActiveBtn(btnStressP7);
-      slSales.value = 1520000;
+      slSales.value = 1777000;
       slProd.value = 89.5;
-      slPrice.value = 30.9;
-      slTreasury.value = 12.0;
+      slPrice.value = 30.898;
+      slR4Share.value = 48.8;
       recalculate();
     });
   }
 
-  [slSales, slProd, slPrice, slTreasury].forEach((el) => {
+  [slSales, slProd, slPrice, slR4Share].forEach((el) => {
     if (el) el.addEventListener("input", recalculate);
   });
 
-  useCarCaetano = true;
   recalculate();
 }
 
